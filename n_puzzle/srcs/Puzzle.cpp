@@ -24,8 +24,6 @@ void Puzzle::read_data(int ac, char **av) {
             if (heuristic < 1 || heuristic > 3) {
                 throw std::runtime_error("Error: Invalid heuristic value. Must be 1, 2, or 3.");
             }
-            else
-                this->heuristic = heuristic;
         }
         else {
             heuristic = 1;
