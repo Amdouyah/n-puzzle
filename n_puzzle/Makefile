@@ -1,7 +1,7 @@
 NAME   = npuzzle
 
 CC     = c++
-CPPFLAGS = -Wall -Wextra -Werror
+CPPFLAGS = -Wall -Wextra -Werror --std=c++11
 
 SRCS    = srcs/main.cpp \
 		  srcs/Puzzle.cpp \

@@ -12,7 +12,8 @@ class Puzzle{
         clock_t complexity;
         int heuristic;
         int size;
-        vector<int> puzzle;;
+        vector<int> puzzle;
+        vector<int> goal;
 
         string strip_comments(const string &line);
     public:
@@ -21,6 +22,8 @@ class Puzzle{
         void readPuzzle(string file);
         // void printPuzzle();
         void solvePuzzle(int heuristic);
+        vector<int> generateSnailGoal();
+        bool checkSolvability();
         ~Puzzle();
 
 };

@@ -7,6 +7,7 @@ int main(int ac, char **av){
     }
     Puzzle p;
     p.read_data(ac, av);
+    p.generateSnailGoal();
     
     return 0;
 }

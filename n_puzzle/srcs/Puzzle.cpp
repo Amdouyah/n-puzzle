@@ -61,15 +61,83 @@ void Puzzle::read_data(int ac, char **av) {
  
         this->size = n;
         this->puzzle = grid;
-
-
     }
     catch (std::exception &e) {
         cerr << e.what() << endl;
     }
 }
 
+std::vector<int> Puzzle::generateSnailGoal()
+{
+    std::vector<int> goal(size * size, 0);
+    int size = this->size;
+
+    int top = 0;
+    int bottom = size - 1;
+    int left = 0;
+    int right = size - 1;
+
+    int value = 1;
+
+    while (left <= right && top <= bottom)
+    {
+        // left -> right
+        for (int i = left; i <= right; i++)
+        {
+            if (value == size * size)
+                goal[top * size + i] = 0;
+            else
+                goal[top * size + i] = value++;
+        }
+        top++;
+
+        // top -> bottom
+        for (int i = top; i <= bottom; i++)
+        {
+            if (value == size * size)
+                goal[i * size + right] = 0;
+            else
+                goal[i * size + right] = value++;
+        }
+        right--;
+
+        // right -> left
+        if (top <= bottom)
+        {
+            for (int i = right; i >= left; i--)
+            {
+                if (value == size * size)
+                    goal[bottom * size + i] = 0;
+                else
+                    goal[bottom * size + i] = value++;
+            }
+            bottom--;
+        }
+
+        // bottom -> top
+        if (left <= right)
+        {
+            for (int i = bottom; i >= top; i--)
+            {
+                if (value == size * size)
+                    goal[i * size + left] = 0;
+                else
+                    goal[i * size + left] = value++;
+            }
+            left++;
+        }
+    }
+    return goal;
+}
+
+bool Puzzle::checkSolvability(){
+    
+
+}
+
 // std::priority_queue<Node*, std::vector<Node*>, CompareNodes> open_set;
 // Node : what to store
 // Vector of nodes : where to store
 // compare function : how to sort the nodes
+
+//NP problems == Nondeterministic Polynomial time problems :These problems have the special property that, once a potential solution is provided, its correctness can be verified quickly. However, finding the solution itself may be computationally difficult.
