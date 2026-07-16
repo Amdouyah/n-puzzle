@@ -7,7 +7,11 @@ int main(int ac, char **av){
     }
     Puzzle p;
     p.read_data(ac, av);
-    p.generateSnailGoal();
+    if(!p.checkSolvability()){
+        cout << "Puzzle is not solvable" << endl;
+        exit(1);
+    }
+    p.solvePuzzle();
     
     return 0;
 }
