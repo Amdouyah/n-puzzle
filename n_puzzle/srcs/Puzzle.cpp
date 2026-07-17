@@ -1,7 +1,8 @@
 #include "Puzzle.hpp"
 #include "Helper.hpp"
 
-// Puzzle::Puzzle() : move_count(0), complexity(0), heuristic(0), size(0) {}
+// Puzzle::Puzzle() : move_count(0), complexity(0), heuristic(0), size(0),
+//                     searchMode(SearchMode::ASTAR), timeComplexity(0), spaceComplexity(0) {}
 
 Puzzle::Puzzle() : move_count(0), heuristic(0), size(0) {}
 
@@ -18,28 +19,24 @@ string Puzzle::strip_comments(const string &line)
     return line;
 }
 
-void Puzzle::read_data(int ac, char **av)
+void Puzzle::read_data(const string &filename, int heuristicChoice, int searchModeChoice)
 {
     try
     {
-        ifstream file(av[1]);
+        ifstream file(filename);
         string line;
         if (!file.is_open())
         {
-            throw runtime_error("Error: Could not open file " + string(av[1]));
+            throw runtime_error("Error: Could not open file " + string(filename));
         }
-        if (ac == 3)
-        {
-            heuristic = std::stoi(av[2]);
-            if (heuristic < 1 || heuristic > 3)
-            {
-                throw std::runtime_error("Error: Invalid heuristic value. Must be 1, 2, or 3.");
-            }
-        }
-        else
-        {
-            heuristic = 1;
-        }
+        if (heuristicChoice < 1 || heuristicChoice > 3)
+            throw std::runtime_error("Error: Invalid heuristic value. Must be 1, 2, or 3.");
+        this->heuristic = heuristicChoice;
+
+        if (searchModeChoice < 1 || searchModeChoice > 3)
+            throw std::runtime_error("Error: Invalid search mode. Must be 1 (A*), 2 (greedy) or 3 (uniform-cost).");
+        this->searchMode = searchModeChoice;
+
         int n = -1;
         vector<int> grid;
         while (getline(file, line))
@@ -92,11 +89,6 @@ void Puzzle::read_data(int ac, char **av)
 
         this->size = n;
         this->puzzle = grid;
-        for(auto it = puzzle.begin(); it != puzzle.end(); ++it)
-        {
-            cout << *it << " ";
-        }
-        cout << "-------\n";
     }
     catch (std::exception &e)
     {
@@ -195,13 +187,29 @@ bool Puzzle::checkSolvability()
     return ((inversions + blankRow + blankRowFromBottom) % 2 == 0);
 }
 
-int Puzzle::computeH()
+int Puzzle::computeH(const vector<int> &state) const
 {
-    return computeHeuristic(this->heuristic, this->puzzle, this->goal, this->goalPositions, this->size);
+    return computeHeuristic(this->heuristic, state, this->goal, this->goalPositions, this->size);
+}
+int Puzzle::computeF(int g, int h) const
+{
+    if (this->searchMode == 1) // A*
+        return g + h;
+    else if (this->searchMode == 2) // Greedy
+        return h;
+    else if (this->searchMode == 3) // Uniform-cost
+        return g;
 }
 void Puzzle::solvePuzzle()
 {
-    int manh = linearConflict(this->puzzle, this->goalPositions, this->size);
+    auto start = make_shared<Node>();
+    start->state = this->puzzle;
+    start->zeroPos = std::find(start->state.begin(), start->state.end(), 0) - start->state.begin();
+    start->g = 0;
+    start->h = computeH(start->state);
+    start->f = computeF(start->g, start->h);
+    start->parent = nullptr;
+
 
 }
 

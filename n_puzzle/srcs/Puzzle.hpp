@@ -8,12 +8,14 @@
 #include <vector>
 using namespace std;
 
+
 class Puzzle{
     private :
         int move_count;
         // clock_t complexity;
         int heuristic;
         int size;
+        int searchMode;
         vector<int> puzzle;
         vector<int> goal;
         vector<int> goalPositions;
@@ -41,11 +43,12 @@ class Puzzle{
             }
         };
         Puzzle();
-        void read_data(int ac, char **av);
+        void read_data(const string &filename, int heuristicChoice, int searchModeChoice);
         void solvePuzzle();
         vector<int> generateSnailGoal();
         bool checkSolvability();
-        int computeH();
+        int computeH(const vector<int> &state) const;
+        int computeF(int g, int h) const;
         ~Puzzle();
 
 };

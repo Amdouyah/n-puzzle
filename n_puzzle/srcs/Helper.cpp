@@ -68,7 +68,6 @@ int manhattanDistance(const vector<int> &state, const vector<int> &goalPositions
     for (size_t i = 0; i < state.size(); i++)
     {
         int value = state[i];
-        cout << "Value: " << value << ", Current Index: " << i << ", Goal Index: " << goalPositions[value] << endl;
         if (value == 0)
             continue;
         int goalIndex = goalPositions[value];
@@ -77,9 +76,7 @@ int manhattanDistance(const vector<int> &state, const vector<int> &goalPositions
         int goalRow = goalIndex / size;
         int goalCol = goalIndex % size;
         total += abs(curRow - goalRow) + abs(curCol - goalCol);
-        cout << "Current Position: (" << curRow << ", " << curCol << "), Goal Position: (" << goalIndex / size << ", " << goalIndex % size << ")" << "  (total is "<< total <<endl;
     }
-    cout << "Final Manhattan Distance: " << total << endl;
     return total;
 }
 
