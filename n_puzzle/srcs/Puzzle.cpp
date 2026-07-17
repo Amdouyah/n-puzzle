@@ -193,12 +193,11 @@ int Puzzle::computeH(const vector<int> &state) const
 }
 int Puzzle::computeF(int g, int h) const
 {
-    if (this->searchMode == 1) // A*
-        return g + h;
-    else if (this->searchMode == 2) // Greedy
+    if (this->searchMode == 2) // Greedy
         return h;
     else if (this->searchMode == 3) // Uniform-cost
         return g;
+    return g + h; // A*
 }
 void Puzzle::solvePuzzle()
 {
