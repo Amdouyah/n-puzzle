@@ -6,13 +6,17 @@
 #include <sstream>
 #include <ctime>
 #include <vector>
+#include <memory>
+#include <queue>
+#include <unordered_set>
+#include <unordered_map>
+#include <cmath>
 using namespace std;
 
 
 class Puzzle{
     private :
         int move_count;
-        // clock_t complexity;
         int heuristic;
         int size;
         int searchMode;
@@ -20,8 +24,8 @@ class Puzzle{
         vector<int> goal;
         vector<int> goalPositions;
 
-        // size_t timeComplexity; 
-        // size_t spaceComplexity;
+        size_t timeComplexity; 
+        size_t spaceComplexity;
 
         string strip_comments(const string &line);
     public:
@@ -44,6 +48,8 @@ class Puzzle{
         };
         Puzzle();
         void read_data(const string &filename, int heuristicChoice, int searchModeChoice);
+        vector<shared_ptr<Puzzle::Node>> getNeighbors(const shared_ptr<Node> &current) const;
+
         void solvePuzzle();
         vector<int> generateSnailGoal();
         bool checkSolvability();

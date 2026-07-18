@@ -1,10 +1,9 @@
 #include "Puzzle.hpp"
 #include "Helper.hpp"
 
-// Puzzle::Puzzle() : move_count(0), complexity(0), heuristic(0), size(0),
-//                     searchMode(SearchMode::ASTAR), timeComplexity(0), spaceComplexity(0) {}
+Puzzle::Puzzle() : move_count(0), heuristic(0), size(0), timeComplexity(0), spaceComplexity(0) {}
 
-Puzzle::Puzzle() : move_count(0), heuristic(0), size(0) {}
+// Puzzle::Puzzle() : move_count(0), heuristic(0), size(0) {}
 
 
 Puzzle::~Puzzle() {}
@@ -65,8 +64,6 @@ void Puzzle::read_data(const string &filename, int heuristicChoice, int searchMo
         if (static_cast<int>(grid.size()) != n * n)
             throw runtime_error("Error: puzzle does not contain n*n values");
 
-        if (static_cast<int>(grid.size()) != n * n)
-            throw runtime_error("Error: puzzle does not contain n*n values");
         std::vector<bool> seen(n * n, false);
 
         for (size_t i = 0; i < grid.size(); i++)
@@ -100,7 +97,7 @@ void Puzzle::read_data(const string &filename, int heuristicChoice, int searchMo
 std::vector<int> Puzzle::generateSnailGoal()
 {
     std::vector<int> goal(size * size, 0);
-    int size = this->size;
+    // int size = this->size;
 
     int top = 0;
     int bottom = size - 1;
@@ -199,6 +196,34 @@ int Puzzle::computeF(int g, int h) const
         return g;
     return g + h; // A*
 }
+
+vector<shared_ptr<Puzzle::Node>> Puzzle::getNeighbors(const shared_ptr<Node> &current) const{
+    vector <shared_ptr<Node>> neighbors;
+    int row = current->zeroPos / size;
+    int col = current->zeroPos % size;
+    const int Drow[4] ={-1, 1, 0, 0};
+    const int Dcol[4] ={0, 0, -1, 1};
+
+    for (int i =0 ; i < 4; i++){
+        int newRow = row + Drow[i];
+        int newCol = col + Dcol[i];
+        if (newRow < 0 || newRow >= size || newCol < 0 || newCol >= size)
+            continue;
+        
+        int newZeroPos = newRow * size + newCol;
+        auto node = make_shared<Node>(); 
+        node->state = current->state;
+        swap(node->state[current->zeroPos], node->state[newZeroPos]);
+        node->zeroPos = newZeroPos;
+        node->g = current->g + 1;
+        node->h = computeH(node->state);
+        node->f = computeF(node->g, node->h);
+        node->parent = current;
+        neighbors.push_back(node);
+    }
+    return neighbors;
+}
+
 void Puzzle::solvePuzzle()
 {
     auto start = make_shared<Node>();
@@ -208,8 +233,44 @@ void Puzzle::solvePuzzle()
     start->h = computeH(start->state);
     start->f = computeF(start->g, start->h);
     start->parent = nullptr;
+    priority_queue<shared_ptr<Node> , vector<shared_ptr<Node>>, CompareNodes> open_set;
+    unordered_set<vector<int>, VectorHash> closed_set;
+    unordered_map<vector<int>, int, VectorHash> bestG;
 
 
+    open_set.push(start);
+    bestG[start->state] = 0;
+
+    while(!open_set.empty())
+    {
+        spaceComplexity = max(spaceComplexity, open_set.size() + closed_set.size());
+
+        shared_ptr<Node> current = open_set.top();
+        open_set.pop();
+        if (current->g > bestG[current->state])
+            continue;
+
+        if(current->state == this->goal)
+        {
+            cout <<" done" << endl;
+            // complexity = clock() - start_time;
+            return;
+        }
+        closed_set.insert(current->state);
+
+        for (const auto& neighbor : getNeighbors(current))
+        {
+            auto it = bestG.find(neighbor->state);
+            bool undiscovered = (it == bestG.end());
+
+            if (undiscovered || neighbor->g < it->second)
+            {
+                bestG[neighbor->state] = neighbor->g;
+                open_set.push(neighbor);
+                closed_set.erase(neighbor->state);
+            }
+        }
+    }
 }
 
 // std::priority_queue<Node*, std::vector<Node*>, CompareNodes> open_set;
