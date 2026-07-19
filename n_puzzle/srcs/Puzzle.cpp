@@ -1,7 +1,7 @@
 #include "Puzzle.hpp"
 #include "Helper.hpp"
 
-Puzzle::Puzzle() : move_count(0), heuristic(0), size(0), timeComplexity(0), spaceComplexity(0) {}
+Puzzle::Puzzle() : heuristic(0), size(0), timeComplexity(0), spaceComplexity(0), count(0) {}
 
 // Puzzle::Puzzle() : move_count(0), heuristic(0), size(0) {}
 
@@ -224,8 +224,43 @@ vector<shared_ptr<Puzzle::Node>> Puzzle::getNeighbors(const shared_ptr<Node> &cu
     return neighbors;
 }
 
+
+void Puzzle::printGrid(const vector<int> &state) const
+{
+    for (int row = 0; row < size; row++)
+    {
+        for (int col = 0; col < size; col++)
+            cout << state[row * size + col] << "  ";
+        cout << endl;
+    }
+}
+
+void Puzzle::printPath(const shared_ptr<Node> &goalNode) const
+{
+    vector<vector<int>> path;
+    for (shared_ptr<Node> n = goalNode; n != nullptr; n = n->parent)
+        path.push_back(n->state);
+    std::reverse(path.begin(), path.end());
+
+    for (size_t step = 0; step < path.size(); step++)
+    {
+        cout << "Step " << step << ":" << endl;
+        printGrid(path[step]);
+        cout << endl;
+    }
+
+    cout << "Solved in " << (path.size() - 1) << " moves." << endl;
+    cout << "Search mode: " << (searchMode == 2 ? "Greedy best-first (f = h)" :
+             searchMode == 3 ? "Uniform-cost (f = g)" : "A* (f = g + h)") << endl;
+    cout << "Time complexity (total states ever selected from opened): " << count << endl;
+    cout << "Time taken (in seconds): " << static_cast<double>(timeComplexity) / CLOCKS_PER_SEC << endl;
+    cout << "Size complexity (max states in opened+closed at once): " << spaceComplexity << endl;
+}
+
 void Puzzle::solvePuzzle()
 {
+	clock_t start_time = clock();
+    count = 0;
     auto start = make_shared<Node>();
     start->state = this->puzzle;
     start->zeroPos = std::find(start->state.begin(), start->state.end(), 0) - start->state.begin();
@@ -247,13 +282,14 @@ void Puzzle::solvePuzzle()
 
         shared_ptr<Node> current = open_set.top();
         open_set.pop();
-        if (current->g > bestG[current->state])
+        if (current->g != bestG[current->state])
             continue;
+        count++;
 
         if(current->state == this->goal)
         {
-            cout <<" done" << endl;
-            // complexity = clock() - start_time;
+            timeComplexity = clock() - start_time;
+            printPath(current);
             return;
         }
         closed_set.insert(current->state);
@@ -271,6 +307,7 @@ void Puzzle::solvePuzzle()
             }
         }
     }
+    cout << "No solution found.\n";
 }
 
 // std::priority_queue<Node*, std::vector<Node*>, CompareNodes> open_set;

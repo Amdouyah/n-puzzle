@@ -1,0 +1,5 @@
+# deliberately unsolvable 3x3 (single tile swap)
+3
+2 1 3
+8 0 4
+7 6 5

@@ -11,12 +11,12 @@
 #include <unordered_set>
 #include <unordered_map>
 #include <cmath>
+#include <algorithm>
 using namespace std;
 
 
 class Puzzle{
     private :
-        int move_count;
         int heuristic;
         int size;
         int searchMode;
@@ -24,8 +24,9 @@ class Puzzle{
         vector<int> goal;
         vector<int> goalPositions;
 
-        size_t timeComplexity; 
+        clock_t timeComplexity; 
         size_t spaceComplexity;
+        size_t count;
 
         string strip_comments(const string &line);
     public:
@@ -41,14 +42,16 @@ class Puzzle{
         
         struct CompareNodes {
             bool operator()(const shared_ptr<Node>& a, const shared_ptr<Node>& b) const {
-                if(a->f != b->f)
-                    return a->f > b->f;
-                return a->h > b->h; // If f is equal, prioritize the node with lower h
+                if(a->f == b->f)
+                    return a->h > b->h;
+                return a->f > b->f;
             }
         };
         Puzzle();
         void read_data(const string &filename, int heuristicChoice, int searchModeChoice);
         vector<shared_ptr<Puzzle::Node>> getNeighbors(const shared_ptr<Node> &current) const;
+        void printPath(const shared_ptr<Node> &goalNode) const;
+        void printGrid(const vector<int> &state) const;
 
         void solvePuzzle();
         vector<int> generateSnailGoal();
