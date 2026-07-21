@@ -194,35 +194,35 @@ int Puzzle::computeF(int g, int h) const
         return h;
     else if (this->searchMode == 3) // Uniform-cost
         return g;
-    return g + h; // A*
+    return g + h;
 }
 
-vector<shared_ptr<Puzzle::Node>> Puzzle::getNeighbors(const shared_ptr<Node> &current) const{
-    vector <shared_ptr<Node>> neighbors;
-    int row = current->zeroPos / size;
-    int col = current->zeroPos % size;
-    const int Drow[4] ={-1, 1, 0, 0};
-    const int Dcol[4] ={0, 0, -1, 1};
+// vector<shared_ptr<Puzzle::Node>> Puzzle::getNeighbors(const shared_ptr<Node> &current) const{
+//     vector <shared_ptr<Node>> neighbors;
+//     int row = current->zeroPos / size;
+//     int col = current->zeroPos % size;
+//     const int Drow[4] ={-1, 1, 0, 0};
+//     const int Dcol[4] ={0, 0, -1, 1};
 
-    for (int i =0 ; i < 4; i++){
-        int newRow = row + Drow[i];
-        int newCol = col + Dcol[i];
-        if (newRow < 0 || newRow >= size || newCol < 0 || newCol >= size)
-            continue;
+//     for (int i =0 ; i < 4; i++){
+//         int newRow = row + Drow[i];
+//         int newCol = col + Dcol[i];
+//         if (newRow < 0 || newRow >= size || newCol < 0 || newCol >= size)
+//             continue;
         
-        int newZeroPos = newRow * size + newCol;
-        auto node = make_shared<Node>(); 
-        node->state = current->state;
-        swap(node->state[current->zeroPos], node->state[newZeroPos]);
-        node->zeroPos = newZeroPos;
-        node->g = current->g + 1;
-        node->h = computeH(node->state);
-        node->f = computeF(node->g, node->h);
-        node->parent = current;
-        neighbors.push_back(node);
-    }
-    return neighbors;
-}
+//         int newZeroPos = newRow * size + newCol;
+//         auto node = make_shared<Node>(); 
+//         node->state = current->state;
+//         swap(node->state[current->zeroPos], node->state[newZeroPos]);
+//         node->zeroPos = newZeroPos;
+//         node->g = current->g + 1;
+//         node->h = computeH(node->state);
+//         node->f = computeF(node->g, node->h);
+//         node->parent = current;
+//         neighbors.push_back(node);
+//     }
+//     return neighbors;
+// }
 
 
 void Puzzle::printGrid(const vector<int> &state) const
@@ -253,7 +253,7 @@ void Puzzle::printPath(const shared_ptr<Node> &goalNode) const
     cout << "Search mode: " << (searchMode == 2 ? "Greedy best-first (f = h)" :
              searchMode == 3 ? "Uniform-cost (f = g)" : "A* (f = g + h)") << endl;
     cout << "Time complexity (total states ever selected from opened): " << count << endl;
-    cout << "Time taken (in seconds): " << static_cast<double>(timeComplexity) / CLOCKS_PER_SEC << endl;
+    cout << "Time taken (in seconds): " << timeComplexity << endl;
     cout << "Size complexity (max states in opened+closed at once): " << spaceComplexity << endl;
 }
 
@@ -263,7 +263,7 @@ void Puzzle::solvePuzzle()
     count = 0;
     auto start = make_shared<Node>();
     start->state = this->puzzle;
-    start->zeroPos = std::find(start->state.begin(), start->state.end(), 0) - start->state.begin();
+    start->zeroPos = static_cast<int>(std::find(start->state.begin(), start->state.end(), 0) - start->state.begin());
     start->g = 0;
     start->h = computeH(start->state);
     start->f = computeF(start->g, start->h);
@@ -276,6 +276,9 @@ void Puzzle::solvePuzzle()
     open_set.push(start);
     bestG[start->state] = 0;
 
+    const int dRow[4] = {-1, 1, 0, 0};
+    const int dCol[4] = {0, 0, -1, 1};
+
     while(!open_set.empty())
     {
         spaceComplexity = max(spaceComplexity, open_set.size() + closed_set.size());
@@ -284,27 +287,51 @@ void Puzzle::solvePuzzle()
         open_set.pop();
         if (current->g != bestG[current->state])
             continue;
+        
         count++;
 
         if(current->state == this->goal)
         {
-            timeComplexity = clock() - start_time;
+            timeComplexity = double(clock() - start_time) / CLOCKS_PER_SEC;
             printPath(current);
             return;
         }
         closed_set.insert(current->state);
 
-        for (const auto& neighbor : getNeighbors(current))
-        {
-            auto it = bestG.find(neighbor->state);
-            bool undiscovered = (it == bestG.end());
+        int row = current->zeroPos / size;
+        int col = current->zeroPos % size;
 
-            if (undiscovered || neighbor->g < it->second)
-            {
-                bestG[neighbor->state] = neighbor->g;
-                open_set.push(neighbor);
-                closed_set.erase(neighbor->state);
-            }
+        for(int dir = 0; dir < 4; dir++){
+
+            int newRow = row + dRow[dir];
+            int newCol = col + dCol[dir];
+            if (newRow < 0 || newRow >= size || newCol < 0 || newCol >= size)
+                continue;
+            
+            int newZeroPos = newRow * size + newCol;
+            vector<int> newState = current->state;
+            swap(newState[current->zeroPos], newState[newZeroPos]);
+
+            if(closed_set.find(newState) != closed_set.end())
+                continue;
+            
+            int newG = current->g + 1;
+            auto it = bestG.find(newState);
+            if(it != bestG.end() && newG >= it->second)
+                continue;
+            
+            int newH = computeH(newState);
+
+            auto node = make_shared<Node>();
+            node->state = std::move(newState);
+            node->zeroPos = newZeroPos;
+            node->g = newG;
+            node->h = newH;
+            node->f = computeF(node->g, node->h);
+            node->parent = current;
+
+            bestG[node->state] = node->g;
+            open_set.push(node);
         }
     }
     cout << "No solution found.\n";

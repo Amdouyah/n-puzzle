@@ -24,7 +24,7 @@ class Puzzle{
         vector<int> goal;
         vector<int> goalPositions;
 
-        clock_t timeComplexity; 
+        double timeComplexity; 
         size_t spaceComplexity;
         size_t count;
 
