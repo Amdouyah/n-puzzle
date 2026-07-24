@@ -7,6 +7,18 @@ static void printUsage(const char *prog)
     cerr << "  -s  1 = A* (default), 2 = greedy best-first, 3 = uniform-cost" << endl;
 }
 
+static bool isNumber(const string &s)
+{
+    if (s.empty())
+        return false;
+    for (char c : s)
+    {
+        if (!std::isdigit(static_cast<unsigned char>(c)))
+            return false;
+    }
+    return true;
+}
+
 int main(int ac, char **av){
 
     string filename;
@@ -62,7 +74,10 @@ int main(int ac, char **av){
     }
     
     Puzzle p;
-    p.read_data(filename, heuristic, searchMode);
+    if (isNumber(filename))
+        p.generatePuzzle(std::atoi(filename.c_str()), heuristic, searchMode);
+    else
+        p.read_data(filename, heuristic, searchMode);
     if(!p.checkSolvability()){
         cout << "Puzzle is not solvable" << endl;
         exit(1);

@@ -1,10 +1,10 @@
 #include "Puzzle.hpp"
 #include "Helper.hpp"
+#include <algorithm> // std::random_shuffle
 
-Puzzle::Puzzle() : heuristic(0), size(0), timeComplexity(0), spaceComplexity(0), count(0) {}
+Puzzle::Puzzle() : heuristic(0), size(0), rng(time(nullptr)), timeComplexity(0), spaceComplexity(0), count(0) {}
 
 // Puzzle::Puzzle() : move_count(0), heuristic(0), size(0) {}
-
 
 Puzzle::~Puzzle() {}
 
@@ -64,19 +64,19 @@ void Puzzle::read_data(const string &filename, int heuristicChoice, int searchMo
         if (static_cast<int>(grid.size()) != n * n)
             throw runtime_error("Error: puzzle does not contain n*n values");
 
-        std::vector<bool> seen(n * n, false);
+        vector<bool> seen(n * n, false);
 
         for (size_t i = 0; i < grid.size(); i++)
         {
             int value = grid[i];
 
-            //valid range
+            // valid range
             if (value < 0 || value >= n * n)
                 throw std::runtime_error(
                     "Error: value " + std::to_string(value) +
                     " is out of range [0.." + std::to_string(n * n - 1) + "]");
 
-            //duplicates
+            // duplicates
             if (seen[value])
                 throw std::runtime_error(
                     "Error: duplicate value found: " + std::to_string(value));
@@ -93,11 +93,47 @@ void Puzzle::read_data(const string &filename, int heuristicChoice, int searchMo
         exit(1);
     }
 }
-
-std::vector<int> Puzzle::generateSnailGoal()
+void shufflePuzzle(int size, vector<int> &puzzle, mt19937 &rng)
 {
-    std::vector<int> goal(size * size, 0);
-    // int size = this->size;
+    //Create the distribution (formula for 0 - size*size-1)
+    uniform_int_distribution<int> dist(0, size * size - 1);
+    for (int i = size * size - 1; i > 0; i--)
+    {
+        int j = dist(rng);
+        swap(puzzle[i], puzzle[j]);
+    }
+}
+
+void Puzzle::generatePuzzle(int size, int heuristicChoice, int searchModeChoice)
+{
+    // Create the engine (generates raw random numbers)
+    this->rng = mt19937(time(nullptr));
+
+    if (heuristicChoice < 1 || heuristicChoice > 3)
+        throw std::runtime_error("Error: Invalid heuristic value. Must be 1, 2, or 3.");
+    this->heuristic = heuristicChoice;
+
+    if (searchModeChoice < 1 || searchModeChoice > 3)
+        throw std::runtime_error("Error: Invalid search mode. Must be 1 (A*), 2 (greedy) or 3 (uniform-cost).");
+    this->searchMode = searchModeChoice;
+
+    if (size < 3)
+        throw std::runtime_error("Error: puzzle size must be >= 3");
+
+    this->size = size;
+    this->puzzle.resize(size * size);
+    for (int i = 0; i < size * size; i++)
+        this->puzzle[i] = i;
+
+    do
+    {
+        shufflePuzzle(size, this->puzzle, this->rng);
+    } while (!checkSolvability());
+}
+
+vector<int> Puzzle::generateSnailGoal()
+{
+    vector<int> goal(size * size, 0);
 
     int top = 0;
     int bottom = size - 1;
@@ -157,7 +193,6 @@ std::vector<int> Puzzle::generateSnailGoal()
     return goal;
 }
 
-
 bool Puzzle::checkSolvability()
 {
 
@@ -180,7 +215,7 @@ bool Puzzle::checkSolvability()
     // Find the blank's row
     int blankRow = blankIndex / size;
     // Find the blank's row from the bottom
-    int blankRowFromBottom = this->goalPositions[0] / size ;
+    int blankRowFromBottom = this->goalPositions[0] / size;
     return ((inversions + blankRow + blankRowFromBottom) % 2 == 0);
 }
 
@@ -190,40 +225,12 @@ int Puzzle::computeH(const vector<int> &state) const
 }
 int Puzzle::computeF(int g, int h) const
 {
-    if (this->searchMode == 2) // Greedy
+    if (this->searchMode == 2) // for Greedy
         return h;
-    else if (this->searchMode == 3) // Uniform-cost
+    else if (this->searchMode == 3) //for Uniform-cost
         return g;
     return g + h;
 }
-
-// vector<shared_ptr<Puzzle::Node>> Puzzle::getNeighbors(const shared_ptr<Node> &current) const{
-//     vector <shared_ptr<Node>> neighbors;
-//     int row = current->zeroPos / size;
-//     int col = current->zeroPos % size;
-//     const int Drow[4] ={-1, 1, 0, 0};
-//     const int Dcol[4] ={0, 0, -1, 1};
-
-//     for (int i =0 ; i < 4; i++){
-//         int newRow = row + Drow[i];
-//         int newCol = col + Dcol[i];
-//         if (newRow < 0 || newRow >= size || newCol < 0 || newCol >= size)
-//             continue;
-        
-//         int newZeroPos = newRow * size + newCol;
-//         auto node = make_shared<Node>(); 
-//         node->state = current->state;
-//         swap(node->state[current->zeroPos], node->state[newZeroPos]);
-//         node->zeroPos = newZeroPos;
-//         node->g = current->g + 1;
-//         node->h = computeH(node->state);
-//         node->f = computeF(node->g, node->h);
-//         node->parent = current;
-//         neighbors.push_back(node);
-//     }
-//     return neighbors;
-// }
-
 
 void Puzzle::printGrid(const vector<int> &state) const
 {
@@ -250,8 +257,8 @@ void Puzzle::printPath(const shared_ptr<Node> &goalNode) const
     }
 
     cout << "Solved in " << (path.size() - 1) << " moves." << endl;
-    cout << "Search mode: " << (searchMode == 2 ? "Greedy best-first (f = h)" :
-             searchMode == 3 ? "Uniform-cost (f = g)" : "A* (f = g + h)") << endl;
+    cout << "Search mode: " << (searchMode == 2 ? "Greedy best-first (f = h)" : searchMode == 3 ? "Uniform-cost (f = g)" : "A* (f = g + h)") << endl;
+    cout << "Heuristic used: " << (heuristic == 1 ? "Manhattan distance" : heuristic == 2 ? "Hamming distance" : "Linear conflict") << endl;
     cout << "Time complexity (total states ever selected from opened): " << count << endl;
     cout << "Time taken (in seconds): " << timeComplexity << endl;
     cout << "Size complexity (max states in opened+closed at once): " << spaceComplexity << endl;
@@ -259,7 +266,7 @@ void Puzzle::printPath(const shared_ptr<Node> &goalNode) const
 
 void Puzzle::solvePuzzle()
 {
-	clock_t start_time = clock();
+    clock_t start_time = clock();
     count = 0;
     auto start = make_shared<Node>();
     start->state = this->puzzle;
@@ -268,10 +275,9 @@ void Puzzle::solvePuzzle()
     start->h = computeH(start->state);
     start->f = computeF(start->g, start->h);
     start->parent = nullptr;
-    priority_queue<shared_ptr<Node> , vector<shared_ptr<Node>>, CompareNodes> open_set;
+    priority_queue<shared_ptr<Node>, vector<shared_ptr<Node>>, CompareNodes> open_set;
     unordered_set<vector<int>, VectorHash> closed_set;
     unordered_map<vector<int>, int, VectorHash> bestG;
-
 
     open_set.push(start);
     bestG[start->state] = 0;
@@ -279,7 +285,7 @@ void Puzzle::solvePuzzle()
     const int dRow[4] = {-1, 1, 0, 0};
     const int dCol[4] = {0, 0, -1, 1};
 
-    while(!open_set.empty())
+    while (!open_set.empty())
     {
         spaceComplexity = max(spaceComplexity, open_set.size() + closed_set.size());
 
@@ -287,10 +293,10 @@ void Puzzle::solvePuzzle()
         open_set.pop();
         if (current->g != bestG[current->state])
             continue;
-        
+
         count++;
 
-        if(current->state == this->goal)
+        if (current->state == this->goal)
         {
             timeComplexity = double(clock() - start_time) / CLOCKS_PER_SEC;
             printPath(current);
@@ -301,25 +307,26 @@ void Puzzle::solvePuzzle()
         int row = current->zeroPos / size;
         int col = current->zeroPos % size;
 
-        for(int dir = 0; dir < 4; dir++){
+        for (int dir = 0; dir < 4; dir++)
+        {
 
             int newRow = row + dRow[dir];
             int newCol = col + dCol[dir];
             if (newRow < 0 || newRow >= size || newCol < 0 || newCol >= size)
                 continue;
-            
+
             int newZeroPos = newRow * size + newCol;
             vector<int> newState = current->state;
             swap(newState[current->zeroPos], newState[newZeroPos]);
 
-            if(closed_set.find(newState) != closed_set.end())
+            if (closed_set.find(newState) != closed_set.end())
                 continue;
-            
+
             int newG = current->g + 1;
             auto it = bestG.find(newState);
-            if(it != bestG.end() && newG >= it->second)
+            if (it != bestG.end() && newG >= it->second)
                 continue;
-            
+
             int newH = computeH(newState);
 
             auto node = make_shared<Node>();
@@ -336,10 +343,5 @@ void Puzzle::solvePuzzle()
     }
     cout << "No solution found.\n";
 }
-
-// std::priority_queue<Node*, std::vector<Node*>, CompareNodes> open_set;
-// Node : what to store
-// Vector of nodes : where to store
-// compare function : how to sort the nodes
 
 // NP problems == Nondeterministic Polynomial time problems :These problems have the special property that, once a potential solution is provided, its correctness can be verified quickly. However, finding the solution itself may be computationally difficult.
